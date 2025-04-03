@@ -3,6 +3,8 @@ import { FetchData } from "$lib/server/page";
 import { GetMonitors, GetIncidentsOpenHome } from "$lib/server/controllers/controller.js";
 import { SortMonitor } from "$lib/clientTools.js";
 import moment from "moment";
+import { page } from "$app/stores";
+import { redirect, error } from '@sveltejs/kit';
 
 function removeTags(str) {
   if (str === null || str === "") return false;
@@ -148,15 +150,22 @@ export async function load({ parent, url }) {
     let allCategories = siteData.categories;
     let selectedCategory = allCategories.find((category) => category.name === query.get("category"));
     if (selectedCategory) {
+
+      if (!selectedCategory.visibility && !parentData.isLoggedIn) {
+        throw redirect(303, '/manage/app');
+      }
+      
+      // If authorized, set up page data
       pageTitle = selectedCategory.name + " - " + pageTitle;
       pageDescription = selectedCategory.description;
       canonical = canonical + "?category=" + query.get("category");
-
       hero = {
         title: selectedCategory.name,
         subtitle: selectedCategory.description,
         image: selectedCategory.image,
       };
+    } else {
+      throw error(404, 'Category not found');
     }
   }
   if (isCategoryPage || isMonitorPage || isGroupPage) {
